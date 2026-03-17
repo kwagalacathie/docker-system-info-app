@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Container System Info - AWS Deployment Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            color: #2d3748;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+        
+        .environment-badge {
+            display: inline-block;
+            padding: 12px 25px;
+            background: {{ metadata.badge_color }};
+            color: white;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin: 15px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h2 {
+            color: #2d3748;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .info-grid {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .label {
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        .value {
+            color: #2d3748;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            text-align: right;
+            max-width: 60%;
+            word-break: break-all;
+        }
+        
+        .progress-section {
+            grid-column: 1 / -1;
+        }
+        
+        .progress-bar {
+            background: #e2e8f0;
+            border-radius: 10px;
+            height: 20px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #38a169);
+            border-radius: 10px;
+            width: {{ deployment.progress }}%;
+            transition: width 0.5s ease;
+        }
+        
+        .step-list {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border-left: 4px solid #cbd5e0;
+        }
+        
+        .step.completed {
+            border-left-color: #48bb78;
+            background: #f0fff4;
+        }
+        
+        .step-icon {
+            font-size: 1.5rem;
+            margin-right: 15px;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .step-status {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #718096;
+            font-size: 0.9rem;
+        }
+        
+        .refresh-info {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            color: #667eea;
+            font-weight: 500;
+        }
+        
+        .api-links {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .api-link {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+        
+        .api-link:hover {
+            background: #5a67d8;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+    <script>
+        // Auto-refresh every 10 seconds
+        setTimeout(() => {
+            window.location.reload();
+        }, 10000);
+        
+        // Update time every second
+        function updateTime() {
+            const timeElements = document.querySelectorAll('.time-display');
+            const now = new Date();
+            timeElements.forEach(el => {
+                el.textContent = now.toLocaleString();
+            });
+        }
+        
+        setInterval(updateTime, 1000);
+        
+        // Initialize
+        updateTime();
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📦 AWS Container Deployment Demo</h1>
+            <p>Assignment: Docker → ECR → ECS Fargate</p>
+            <div class="environment-badge">
+                {{ metadata.badge_text }}
+            </div>
+            <p class="time-display">{{ metadata.server_time }}</p>
+        </div>
+        
+        <div class="dashboard">
+            <div class="card">
+                <h2>📊 System Information</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="label">Environment:</span>
+                        <span class="value">{{ metadata.environment }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Container ID:</span>
+                        <span class="value">{{ metadata.container_id }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Hostname:</span>
+                        <span class="value">{{ metadata.hostname }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Platform:</span>
+                        <span class="value">{{ metadata.platform }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Architecture:</span>
+                        <span class="value">{{ metadata.architecture }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Python Version:</span>
+                        <span class="value">{{ metadata.python_version }}</span>
+                    </div>
+                    {% if metadata.is_aws %}
+                    <div class="info-item">
+                        <span class="label">AWS Region:</span>
+                        <span class="value">{{ metadata.aws_region }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="info-item">
+                        <span class="label">In Container:</span>
+                        <span class="value">{{ "✅ Yes" if metadata.is_docker else "❌ No" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Client IP:</span>
+                        <span class="value">{{ metadata.request_ip }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card progress-section">
+                <h2>✅ Assignment Progress</h2>
+                <p>Completed {{ deployment.completed }} of {{ deployment.total }} steps</p>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                
+                <div class="step-list">
+                    <div class="step {% if deployment.steps.docker_built %}completed{% endif %}">
+                        <div class="step-icon">
+                            {% if deployment.steps.docker_built %}✅{% else %}⏳{% endif %}
+                        </div>
+                        <div class="step-content">
+                            <div class="step-title">1. Build Docker Container</div>
+                            <div class="step-status">Create and test container locally</div>
+                        </div>
+                    </div>
+                    
+                    <div class="step {% if deployment.steps.ecr_pushed %}completed{% endif %}">
+                        <div class="step-icon">
+                            {% if deployment.steps.ecr_pushed %}✅{% else %}⏳{% endif %}
+                        </div>
+                        <div class="step-content">
+                            <div class="step-title">2. Push to Amazon ECR</div>
+                            <div class="step-status">Upload container image to AWS</div>
+                        </div>
+                    </div>
+                    
+                    <div class="step {% if deployment.steps.ecs_running %}completed{% endif %}">
+                        <div class="step-icon">
+                            {% if deployment.steps.ecs_running %}✅{% else %}⏳{% endif %}
+                        </div>
+                        <div class="step-content">
+                            <div class="step-title">3. Run on ECS Fargate</div>
+                            <div class="step-status">Deploy container serverlessly</div>
+                        </div>
+                    </div>
+                    
+                    <div class="step {% if deployment.steps.app_accessible %}completed{% endif %}">
+                        <div class="step-icon">
+                            {% if deployment.steps.app_accessible %}✅{% else %}⏳{% endif %}
+                        </div>
+                        <div class="step-content">
+                            <div class="step-title">4. Access Application</div>
+                            <div class="step-status">Publicly accessible via URL</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="api-links">
+            <a href="/health" class="api-link" target="_blank">Health Check</a>
+            <a href="/api/metadata" class="api-link" target="_blank">Metadata API</a>
+            <a href="/api/status" class="api-link" target="_blank">Status API</a>
+        </div>
+        
+        <div class="refresh-info">
+            ⚡ Page auto-refreshes every 10 seconds • Last update: <span class="time-display">{{ metadata.server_time }}</span>
+        </div>
+        
+        <div class="footer">
+            <p>Container System Info App • Created for AWS Container Deployment Assignment</p>
+            <p>Running on: {{ metadata.platform }} • Container: {{ metadata.container_id }}</p>
+        </div>
+    </div>
+</body>
+</html>
