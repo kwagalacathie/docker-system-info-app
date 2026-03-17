@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-service
+  labels:
+    app: system-info
+spec:
+  # NodePort makes the app accessible on the EC2 Public IP
+  type: NodePort
+  selector:
+    app: system-info
+  ports:
+    - protocol: TCP
+      port: 80          # The port the service listens on inside the cluster
+      target_port: 5000 # The port your Flask app is running on (from app.py)
+      nodePort: 30005   # The external port (EC2-IP:30005)
